@@ -1,5 +1,8 @@
 package com.company;
 
 public enum TokenType {
-    WHITE_SPACE
+    WHITE_SPACE,
+    OPERATOR,
+    PUNCTUATION,
+    ERROR
 }

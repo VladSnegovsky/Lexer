@@ -41,17 +41,61 @@ public class Lexer {
     }
 
     private void addCharacterToBuffer(State state, char ch) {
-        buffer.append(ch);
+        this.buffer.append(ch);
         this.state = state;
+    }
+
+    private void addToken(TokenType tokenType, String value) {
+        this.tokens.add(new Token(tokenType, value));
+    }
+
+    private void addToken(TokenType tokenType) {
+        addToken(tokenType, buffer.toString());
+        this.buffer = new StringBuilder();
     }
 
     private void stateStart(char ch) {
         if (Character.isWhitespace(ch)) {
-            this.tokens.add(new Token(TokenType.WHITE_SPACE, String.valueOf(ch)));
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
         } else if (ch == '0') {
             addCharacterToBuffer(State.SINGLE_ZERO, ch);
         } else if (ch >= '1' && ch <= '9') {
             addCharacterToBuffer(State.DECIMAL_NUMBER, ch);
+        } else if (ch == '+') {
+            addCharacterToBuffer(State.SINGLE_PLUS, ch);
+        } else if (ch == '-') {
+            addCharacterToBuffer(State.SINGLE_MINUS, ch);
+        } else if (ch == '=' || ch == '%' || ch == '^' || ch == '!' || ch == '*') {
+            addCharacterToBuffer(State.SOME_OPERATOR_BEFORE_EQUAL, ch);
+        } else if (ch == '<') {
+            addCharacterToBuffer(State.SINGLE_LESS, ch);
+        } else if (ch == '>') {
+            addCharacterToBuffer(State.SINGLE_GREATER, ch);
+        } else if (ch == '/') {
+            addCharacterToBuffer(State.SINGLE_SLASH, ch);
+        } else if (ch == '&') {
+            addCharacterToBuffer(State.SINGLE_AMPERSAND, ch);
+        } else if (ch == '|') {
+            addCharacterToBuffer(State.SINGLE_VERTICAL_BAR, ch);
+        } else if (ch == ':') {
+            addCharacterToBuffer(State.SINGLE_COLON, ch);
+        } else if (Character.isLetter(ch) || ch == '$' || ch == '_') {
+            addCharacterToBuffer(State.IDENTIFIER, ch);
+        } else if (ch == '.') {
+            addCharacterToBuffer(State.SINGLE_DOT, ch);
+        } else if (ch == '\'') {
+            addCharacterToBuffer(State.SYMBOLIC_CONSTANT, ch);
+        } else if (ch == '\"') {
+            addCharacterToBuffer(State.LITERAL_CONSTANT, ch);
+        } else if (ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '[' || ch == ']' || ch == '@' || ch == ',' || ch == ';') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.PUNCTUATION);
+        } else if (ch == '?' || ch == '~') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.ERROR);
         }
     }
 }
