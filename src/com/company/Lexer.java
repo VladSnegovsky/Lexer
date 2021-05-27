@@ -12,6 +12,7 @@ public class Lexer {
     private State state = State.INITIAL;
     private StringBuilder buffer = new StringBuilder();
     private List<Token> tokens = new LinkedList<>();
+    private int position;
 
     public Lexer(String file) throws IOException {
         readFile(file);
@@ -36,8 +37,20 @@ public class Lexer {
             char ch = this.code.charAt(currPos);
             if (state == State.INITIAL){
                 stateStart(ch);
+            } else if (state == State.SINGLE_SLASH) {
+                stateSingleSlash(ch);
+            } else if (state == State.SINGLE_PLUS) {
+                stateSinglePlus(ch);
+            } else if (state == State.SINGLE_MINUS) {
+                stateSingleMinus(ch);
+            } else if (state == State.STAR_IN_MULTI_LINE_COMMENT) {
+                stateStarInMultiLineComment(ch);
             }
         }
+    }
+
+    private void addCharacterToBuffer(char ch) {
+        this.buffer.append(ch);
     }
 
     private void addCharacterToBuffer(State state, char ch) {
@@ -96,6 +109,54 @@ public class Lexer {
         } else {
             addCharacterToBuffer(State.INITIAL, ch);
             addToken(TokenType.ERROR);
+        }
+    }
+
+    private void stateSingleSlash(char ch) {
+        if (ch == '/') {
+            addCharacterToBuffer(State.SINGLE_LINE_COMMENT, ch);
+        } else if (ch == '*') {
+            addCharacterToBuffer(State.MULTI_LINE_COMMENT, ch);
+        } else if (ch == '=') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSinglePlus(char ch) {
+        if (ch == '+' || ch == '=') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleMinus(char ch) {
+        if (ch == '-' || ch == '=' || ch == '>') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateStarInMultiLineComment(char ch) {
+        if (ch == '*') {
+            addCharacterToBuffer(ch);
+        } else if (ch == '/') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.MULTI_LINE_COMMENT);
+        } else {
+            addCharacterToBuffer(State.MULTI_LINE_COMMENT, ch);
         }
     }
 }

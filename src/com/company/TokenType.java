@@ -4,5 +4,6 @@ public enum TokenType {
     WHITE_SPACE,
     OPERATOR,
     PUNCTUATION,
-    ERROR
+    ERROR,
+    MULTI_LINE_COMMENT
 }
