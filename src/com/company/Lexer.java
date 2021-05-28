@@ -43,8 +43,42 @@ public class Lexer {
                 stateSinglePlus(ch);
             } else if (state == State.SINGLE_MINUS) {
                 stateSingleMinus(ch);
-            } else if (state == State.STAR_IN_MULTI_LINE_COMMENT) {
+            } else if (state == State.MULTI_LINE_COMMENT_AND_STAR) {
                 stateStarInMultiLineComment(ch);
+            } else if (state == State.SINGLE_LINE_COMMENT) {
+                stateSingleLineComment(ch);
+            } else if (state == State.MULTI_LINE_COMMENT) {
+                stateMultiLineComment(ch);
+            } else if (state == State.SOME_OPERATOR_BEFORE_EQUAL) {
+                stateSomeOperatorBeforeEqual(ch);
+            } else if (state == State.SINGLE_LESS) {
+                stateSingleLess(ch);
+            } else if (state == State.SINGLE_GREATER) {
+                stateSingleGreater(ch);
+            } else if (state == State.DOUBLE_GREATER) {
+                stateDoubleGreater(ch);
+            } else if (state == State.SINGLE_COLON) {
+                stateSingleColon(ch);
+            } else if (state == State.SINGLE_AMPERSAND) {
+                stateSingleAmpersand(ch);
+            } else if (state == State.SINGLE_VERTICAL_BAR) {
+                stateSingleVerticalBar(ch);
+            } else if (state == State.SINGLE_DOT) {
+                stateSingleDot(ch);
+            } else if (state == State.DOUBLE_DOT) {
+                stateDoubleDot(ch);
+            } else if (state == State.IDENTIFIER) {
+                stateIdentifier(ch);
+            } else if (state == State.DECIMAL_NUMBER) {
+                stateDecimalNumber(ch);
+            } else if (state == State.OCTAL_NUMBER) {
+                stateOctalNumber(ch);
+            } else if (state == State.HEX_NUMBER) {
+                stateHexNumber(ch);
+            } else if (state == State.FLOATING_POINT_NUMBER) {
+                stateFloatingPointNumber(ch);
+            } else if (state == State.SINGLE_ZERO) {
+                stateSingleZero(ch);
             }
         }
     }
@@ -66,6 +100,9 @@ public class Lexer {
         addToken(tokenType, buffer.toString());
         this.buffer = new StringBuilder();
     }
+
+
+
 
     private void stateStart(char ch) {
         if (Character.isWhitespace(ch)) {
@@ -113,14 +150,18 @@ public class Lexer {
     }
 
     private void stateSingleSlash(char ch) {
+        // //
         if (ch == '/') {
             addCharacterToBuffer(State.SINGLE_LINE_COMMENT, ch);
         } else if (ch == '*') {
+            // /*
             addCharacterToBuffer(State.MULTI_LINE_COMMENT, ch);
         } else if (ch == '=') {
+            // /=
             addCharacterToBuffer(State.INITIAL, ch);
             addToken(TokenType.OPERATOR);
         } else {
+            // /
             addToken(TokenType.OPERATOR);
             this.position--;
             state = State.INITIAL;
@@ -128,10 +169,12 @@ public class Lexer {
     }
 
     private void stateSinglePlus(char ch) {
+        // ++ or +=
         if (ch == '+' || ch == '=') {
             addCharacterToBuffer(State.INITIAL, ch);
             addToken(TokenType.OPERATOR);
         } else {
+            // +
             addToken(TokenType.OPERATOR);
             this.position--;
             state = State.INITIAL;
@@ -139,10 +182,12 @@ public class Lexer {
     }
 
     private void stateSingleMinus(char ch) {
+        // -- or -= or ->
         if (ch == '-' || ch == '=' || ch == '>') {
             addCharacterToBuffer(State.INITIAL, ch);
             addToken(TokenType.OPERATOR);
         } else {
+            // -
             addToken(TokenType.OPERATOR);
             this.position--;
             state = State.INITIAL;
@@ -157,6 +202,240 @@ public class Lexer {
             addToken(TokenType.MULTI_LINE_COMMENT);
         } else {
             addCharacterToBuffer(State.MULTI_LINE_COMMENT, ch);
+        }
+    }
+
+    private void stateSingleLineComment(char ch) {
+        if (ch == '\n') {
+            addToken(TokenType.SINGLE_LINE_COMMENT);
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
+            state = State.INITIAL;
+        } else {
+            addCharacterToBuffer(ch);
+        }
+    }
+
+    private void stateMultiLineComment(char ch) {
+        if (ch == '*') {
+            addCharacterToBuffer(State.MULTI_LINE_COMMENT_AND_STAR, ch);
+        } else {
+            addCharacterToBuffer(ch);
+        }
+    }
+
+    private void stateSomeOperatorBeforeEqual(char ch) {
+        // ==
+        if (ch == '=') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            // =
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleLess(char ch) {
+        if (ch == '<') {
+            // <<
+            addCharacterToBuffer(State.SOME_OPERATOR_BEFORE_EQUAL, ch); //double
+        } else if (ch == '=') {
+            // <=
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            // <
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleGreater(char ch) {
+        // >>
+        if (ch == '>') {
+            addCharacterToBuffer(State.DOUBLE_GREATER, ch);
+        } else if (ch == '=') {
+            // >=
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            // >
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateDoubleGreater(char ch) {
+        // >>>
+        if (ch == '>') {
+            addCharacterToBuffer(State.SOME_OPERATOR_BEFORE_EQUAL, ch);
+        } else if (ch == '=') {
+            // >>=
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            // >>
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleColon(char ch) {
+        // ::
+        if (ch == ':') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.PUNCTUATION);
+        } else {
+            // :
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleAmpersand(char ch) {
+        // && or &=
+        if (ch == '&' || ch == '=') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            // &
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleVerticalBar(char ch) {
+        // || or |=
+        if (ch == '|' || ch == '=') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.OPERATOR);
+        } else {
+            // |
+            addToken(TokenType.OPERATOR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleDot(char ch) {
+        // ..
+        if (ch == '.') {
+            addCharacterToBuffer(State.DOUBLE_DOT, ch);
+        } else if (Character.isDigit(ch)) {
+            addCharacterToBuffer(State.FLOATING_POINT_NUMBER, ch);
+        } else {
+            // .
+            addToken(TokenType.PUNCTUATION);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateDoubleDot(char ch) {
+        // ...
+        if (ch == '.') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.PUNCTUATION);
+        } else {
+            // ..
+            addToken(TokenType.ERROR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateIdentifier(char ch) {
+        if (Character.isDigit(ch) || Character.isLetter(ch) || ch == '_' || ch == '$') {
+            addCharacterToBuffer(ch);
+        } else if (SymbolType.isKeyword(buffer.toString())) {
+            addToken(TokenType.KEYWORD);
+            this.position--;
+            state = State.INITIAL;
+        } else if (buffer.toString().equals("true") || buffer.toString().equals("false")) {
+            addToken(TokenType.BOOLEAN_LITERAL);
+            this.position--;
+            state = State.INITIAL;
+        } else if (buffer.toString().equals("null")) {
+            addToken(TokenType.NULL_LITERAL);
+            this.position--;
+            state = State.INITIAL;
+        } else {
+            addToken(TokenType.IDENTIFIER);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateDecimalNumber(char ch) {
+        if (Character.isDigit(ch) || ch == '_' || ch == 'e' || ch == 'E') {
+            addCharacterToBuffer(ch);
+        } else if (ch == '.') {
+            addCharacterToBuffer(State.FLOATING_POINT_NUMBER, ch);
+        } else if (ch == 'l' || ch == 'L' || ch == 'd' || ch == 'D' || ch == 'f' || ch == 'F') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.NUMERIC);
+        } else {
+            addToken(TokenType.NUMERIC);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateOctalNumber(char ch) {
+        if (ch >= '0' && ch <= '7' || ch == '_') {
+            addCharacterToBuffer(ch);
+        } else if (ch == 'l' || ch == 'L') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.NUMERIC);
+        } else {
+            addToken(TokenType.NUMERIC);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateHexNumber(char ch) {
+        if (Character.isDigit(ch) || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || ch == '_') {
+            addCharacterToBuffer(ch);
+        } else {
+            addToken(TokenType.NUMERIC);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateFloatingPointNumber(char ch) {
+        if (Character.isDigit(ch) || ch == '_' || ch == 'e' || ch == 'E') {
+            addCharacterToBuffer(ch);
+        } else if (ch == 'd' || ch == 'D' || ch == 'f' || ch == 'F') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.NUMERIC);
+        } else {
+            addToken(TokenType.NUMERIC);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSingleZero(char ch) {
+        if (ch == '.') {
+            addCharacterToBuffer(State.FLOATING_POINT_NUMBER, ch);
+        } else if (ch == 'x' || ch == 'X') {
+            addCharacterToBuffer(State.HEX_NUMBER, ch);
+        } else if (ch >= '0' && ch <= '7' || ch == '_') {
+            addCharacterToBuffer(State.OCTAL_NUMBER, ch);
+        } else if (ch == 'b' || ch == 'B') {
+            addCharacterToBuffer(State.BINARY_NUMBER, ch);
+        } else {
+            addToken(TokenType.NUMERIC);
+            this.position--;
+            state = State.INITIAL;
         }
     }
 }
