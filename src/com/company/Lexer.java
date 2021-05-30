@@ -1,6 +1,5 @@
 package com.company;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -11,11 +10,13 @@ public class Lexer {
     private String code;
     private State state = State.INITIAL;
     private StringBuilder buffer = new StringBuilder();
-    private List<Token> tokens = new LinkedList<>();
+    private final List<Token> tokens = new LinkedList<>();
     private int position;
 
     public Lexer(String file) throws IOException {
         readFile(file);
+        parser();
+        Output.showTokens(this.tokens);
     }
 
     private String byteToString(byte[] data) {
@@ -26,7 +27,7 @@ public class Lexer {
     }
 
     private void readFile(String file) throws IOException {
-        FileInputStream fileInputStream = new FileInputStream(new File(file));
+        FileInputStream fileInputStream = new FileInputStream(file);
         byte[] arr = fileInputStream.readAllBytes();
         this.code = byteToString(arr);
         fileInputStream.close();
@@ -79,6 +80,28 @@ public class Lexer {
                 stateFloatingPointNumber(ch);
             } else if (state == State.SINGLE_ZERO) {
                 stateSingleZero(ch);
+            } else if (state == State.BINARY_NUMBER) {
+                stateBinaryNumber(ch);
+            } else if (state == State.SYMBOLIC_CONSTANT) {
+                stateSymbolicConstant(ch);
+            } else if (state == State.BACKSLASH_IN_SYMBOLIC_CONSTANT) {
+                stateBackslashInSymbolicConstant(ch);
+            } else if (state == State.ONE_OCTAL_DIGIT_AFTER_BACKSLASH_IN_SYMBOLIC_CONSTANT) {
+                stateOneOctalDigitAfterBackslashInSymbolicConstant(ch);
+            } else if (state == State.TWO_OCTAL_DIGIT_AFTER_BACKSLASH_IN_SYMBOLIC_CONSTANT) {
+                stateTwoOctalDigitAfterBackslashInSymbolicConstant(ch);
+            } else if (state == State.END_OF_SYMBOLIC_CONSTANT) {
+                stateEndOfSymbolicConstant(ch);
+            } else if (state == State.ERROR_READ_SYMBOLIC_CONSTANT) {
+                stateErrorReadSymbolicConstant(ch);
+            } else if (state == State.BACKSLASH_INSIDE_ERROR_READ_SYMBOLIC_CONSTANT) {
+                stateBackslashInsideErrorReadSymbolicConstant(ch);
+            } else if (state == State.LITERAL_CONSTANT) {
+                stateLiteralConstant(ch);
+            } else if (state == State.BACKSLASH_IN_LITERAL_CONSTANT) {
+                stateBackslashInLiteralConstant(ch);
+            } else if (state == State.ERROR_READ_LITERAL_CONSTANT) {
+                stateErrorReadLiteralConstant(ch);
             }
         }
     }
@@ -436,6 +459,126 @@ public class Lexer {
             addToken(TokenType.NUMERIC);
             this.position--;
             state = State.INITIAL;
+        }
+    }
+
+    private void stateBinaryNumber(char ch) {
+        if (ch == '0' || ch == '1' || ch == '_') {
+            addCharacterToBuffer(ch);
+        } else {
+            addToken(TokenType.NUMERIC);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateSymbolicConstant(char ch) {
+        if (ch == '\\') {
+            addCharacterToBuffer(State.BACKSLASH_IN_SYMBOLIC_CONSTANT, ch);
+        } else if (ch == '\n') {
+            addToken(TokenType.ERROR);
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
+            state = State.INITIAL;
+        } else {
+            addCharacterToBuffer(State.END_OF_SYMBOLIC_CONSTANT, ch);
+        }
+    }
+
+    private void stateBackslashInSymbolicConstant(char ch) {
+        if (ch >= '0' && ch <= '7') {
+            addCharacterToBuffer(State.ONE_OCTAL_DIGIT_AFTER_BACKSLASH_IN_SYMBOLIC_CONSTANT, ch);
+        } else if (SymbolType.isEscapeSequence(ch)) {
+            addCharacterToBuffer(State.END_OF_SYMBOLIC_CONSTANT, ch);
+        } else {
+            addToken(TokenType.ERROR);
+            this.position--;
+            state = State.INITIAL;
+        }
+    }
+
+    private void stateOneOctalDigitAfterBackslashInSymbolicConstant(char ch) {
+        if (ch >= '0' && ch <= '7') {
+            addCharacterToBuffer(State.TWO_OCTAL_DIGIT_AFTER_BACKSLASH_IN_SYMBOLIC_CONSTANT, ch);
+        } else {
+            this.position--;
+            state = State.END_OF_SYMBOLIC_CONSTANT;
+        }
+    }
+
+    private void stateTwoOctalDigitAfterBackslashInSymbolicConstant(char ch) {
+        if (ch >= '0' && ch <= '7') {
+            addCharacterToBuffer(State.END_OF_SYMBOLIC_CONSTANT, ch);
+        } else {
+            this.position--;
+            state = State.END_OF_SYMBOLIC_CONSTANT;
+        }
+    }
+
+    private void stateEndOfSymbolicConstant(char ch) {
+        if (ch == '\'') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.SYMBOLIC);
+        } else if (ch == '\n') {
+            addToken(TokenType.ERROR);
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
+            state = State.INITIAL;
+        } else {
+            addCharacterToBuffer(State.ERROR_READ_SYMBOLIC_CONSTANT, ch);
+        }
+    }
+
+    private void stateErrorReadSymbolicConstant(char ch) {
+        if (ch == '\n') {
+            addToken(TokenType.ERROR);
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
+            state = State.INITIAL;
+        } else if (ch == '\'') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.ERROR);
+        } else if (ch == '\\') {
+            addCharacterToBuffer(State.BACKSLASH_INSIDE_ERROR_READ_SYMBOLIC_CONSTANT, ch);
+        } else {
+            addCharacterToBuffer(ch);
+        }
+    }
+
+    private void stateBackslashInsideErrorReadSymbolicConstant(char ch) {
+        addCharacterToBuffer(State.ERROR_READ_SYMBOLIC_CONSTANT, ch);
+    }
+
+    private void stateLiteralConstant(char ch) {
+        if (ch == '\\') {
+            addCharacterToBuffer(State.BACKSLASH_IN_LITERAL_CONSTANT, ch);
+        } else if (ch == '\"') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.LITERAL);
+        } else if (ch == '\n') {
+            addToken(TokenType.ERROR);
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
+            state = State.INITIAL;
+        } else {
+            addCharacterToBuffer(ch);
+        }
+    }
+
+    private void stateBackslashInLiteralConstant(char ch) {
+        if (SymbolType.isEscapeSequence(ch) || (ch >= '0' && ch <= '7')) {
+            addCharacterToBuffer(State.LITERAL_CONSTANT, ch);
+        } else {
+            addCharacterToBuffer(State.ERROR_READ_LITERAL_CONSTANT, ch);
+        }
+    }
+
+    private void stateErrorReadLiteralConstant(char ch) {
+        if (ch == '\n') {
+            addToken(TokenType.ERROR);
+            addToken(TokenType.WHITE_SPACE, String.valueOf(ch));
+            state = State.INITIAL;
+        } else if (ch == '\"') {
+            addCharacterToBuffer(State.INITIAL, ch);
+            addToken(TokenType.ERROR);
+        } else {
+            addCharacterToBuffer(ch);
         }
     }
 }

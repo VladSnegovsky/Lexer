@@ -11,5 +11,7 @@ public enum TokenType {
     IDENTIFIER,
     BOOLEAN_LITERAL,
     KEYWORD,
-    NUMERIC
+    NUMERIC,
+    SYMBOLIC,
+    LITERAL
 }
