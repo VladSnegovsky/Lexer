@@ -1,6 +1,6 @@
 package com.company;
 
-public class Token implements Comparable<Token>{
+public class Token{
     private final Pair<TokenType, String> token;
 
     public Token(TokenType tokenType, String value) {
@@ -14,9 +14,20 @@ public class Token implements Comparable<Token>{
     public String getValue() {
         return this.token.second;
     }
-
-    @Override
-    public int compareTo(Token token) {
-        return 0;
-    }
 }
+
+
+
+
+
+
+
+
+
+
+
+// implements Comparable<Token>
+//@Override
+//public int compareTo(Token token) {
+//        return 0;
+//        }

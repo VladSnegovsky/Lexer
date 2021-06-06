@@ -34,11 +34,11 @@ public class Lexer {
     }
 
     private void parser() {
-        for (int currPos = 0; currPos < this.code.length(); currPos++) {
-            char ch = this.code.charAt(currPos);
+        for (this.position = 0; this.position < this.code.length(); this.position++) {
+            char ch = this.code.charAt(this.position);
             if (state == State.INITIAL){
                 stateStart(ch);
-            } else if (state == State.SINGLE_SLASH) {
+            } else if (state == State.SINGLE_SLASH) {//
                 stateSingleSlash(ch);
             } else if (state == State.SINGLE_PLUS) {
                 stateSinglePlus(ch);
@@ -161,6 +161,7 @@ public class Lexer {
         } else if (ch == '\"') {
             addCharacterToBuffer(State.LITERAL_CONSTANT, ch);
         } else if (ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '[' || ch == ']' || ch == '@' || ch == ',' || ch == ';') {
+            System.out.println(String.valueOf(ch) + " in INITIAL");
             addCharacterToBuffer(State.INITIAL, ch);
             addToken(TokenType.PUNCTUATION);
         } else if (ch == '?' || ch == '~') {
